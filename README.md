@@ -76,119 +76,98 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run the HMM classifier with 5-fold cross-validation:
+This project runs the HMM-based classifier through a Jupyter notebook.
 
-```bash
-python hmm.py
-```
+To execute the full pipeline, open and run:
 
-### Key Parameters
+    ranking+hmm+eval.ipynb
 
-You can modify these in the code:
+Run all cells sequentially from top to bottom. The notebook performs data loading, gene set construction, ranking, HMM training, prediction, and evaluation.
 
-- `n_splits=5` - Number of cross-validation folds
-- `n_states=6` - Number of hidden states in the HMM
-- Gene set file path (currently `'enrich-input1-GO_BP.tsv'`)
-- Data file path (currently `'merged.csv'`)
+---
+
+## Key Parameters
+
+The following parameters can be modified directly in the notebook:
+
+- **Input data**
+  - Gene expression data file:
+  
+        data_file = "merged.csv"
+
+- **Gene set definition**
+  - GO biological process gene sets:
+  
+        cbcg41_pd = pd.read_csv("enrich-input1-GO_BP.tsv", sep="\t")
+  
+  - Only gene sets containing more than one gene are used.
+
+- **Number of hidden states**
+  - Defined during HMM training:
+  
+        eh = hmm_rank(train_data_h, 6)
+        el = hmm_rank(train_data_l, 6)
+  
+  - Here, `6` specifies the number of hidden states.
+
+- **Cross-validation**
+  - Number of folds:
+  
+        k_fold = 10
+  
+  - Samples are randomly shuffled and split into training and validation sets according to this value.
+
+---
+
+## Method Overview
+
+The notebook implements the following pipeline:
+
+1. **Gene set construction**  
+   Genes are grouped into biological process gene sets derived from GO enrichment results. Each gene set is summarized per patient using a standardized statistic based on the mean and standard deviation of its member genes.
+
+2. **Gene set ranking**  
+   For each patient, gene sets are ranked according to their standardized scores. These ranked gene sets form the observation sequences used by the HMM.
+
+3. **HMM training**  
+   Two separate HMMs are trained:
+   - One using high-risk samples
+   - One using low-risk samples  
+
+   Emission probabilities are estimated from empirical rank frequencies. A left-to-right transition structure is assumed.
+
+4. **Prediction**  
+   Each validation sample is evaluated under both HMMs. Classification is based on which model produces the higher log-likelihood. A posterior probability of high risk (`prob_high`) is also computed.
+
+5. **Evaluation**  
+   Predictions are compared against ground-truth labels to compute classification performance metrics.
+
+---
 
 ## Output
 
-The script outputs:
+The notebook reports:
 
-- **Per-fold metrics:**
-  - AUC (Area Under ROC Curve)
-  - MCC (Matthews Correlation Coefficient)
+- **Confusion matrix**
+  - True positives (TP), true negatives (TN), false positives (FP), and false negatives (FN)
 
-- **Overall cross-validation metrics:**
-  - Overall AUC
-  - Overall MCC
-  - Confusion matrix (TP, TN, FP, FN)
-  - Accuracy, Sensitivity, Specificity
+- **Performance metrics**
+  - Area Under the ROC Curve (AUC)
+  - Matthews Correlation Coefficient (MCC)
 
-- **Top discriminative gene sets:**
-  - Ranked by t-statistic
+### Example Output
 
-## Example Output
+    AUC: 0.6206
+    MCC: 0.2536
 
-```
-Number of gene sets: 150
-Data shape: (200, 1502)
-Class distribution:
-False    120
-True      80
+A confusion matrix is also displayed using `pd.crosstab`, showing predicted versus true risk labels.
 
-============================================================
-Fold 1/5
-============================================================
-Train size: 160 (High risk: 64)
-Test size: 40 (High risk: 16)
-
-Top 10 most discriminative gene sets:
-  Module_1: 4.523
-  Module_15: 3.891
-  ...
-
-Fold 1 Results:
-  AUC: 0.7823
-  MCC: 0.5234
-
-============================================================
-OVERALL CROSS-VALIDATION RESULTS
-============================================================
-Overall AUC: 0.7654
-Overall MCC: 0.4987
-...
-```
-
-## Data Sources
-
-### METABRIC Dataset
-This project uses the METABRIC (Molecular Taxonomy of Breast Cancer International Consortium) dataset from cBioPortal:
-
-- **Source:** [cBioPortal for Cancer Genomics](https://www.cbioportal.org/)
-- **Study:** Breast Cancer (METABRIC, Nature 2012 & Nat Commun 2016)
-- **Files required:**
-  - `data_clinical_patient.txt` - Clinical and demographic information
-  - `data_mrna_illumina_microarray.txt` - Gene expression profiles
-- **Reference:** Curtis et al., Nature 2012; Pereira et al., Nat Commun 2016
-
-### Gene Sets
-- GO Biological Process gene sets from enrichment analysis
-- Format: TSV file with `genes` column containing comma-separated gene symbols
-
-### Module Score Calculation
-For each gene set with genes g₁, g₂, ..., gₙ:
-
-```
-Module Score = √n × (mean expression) / (std expression)
-```
-
-### Observation State Discretization
-Continuous module scores are discretized into n_states (default: 6) discrete observation symbols for the HMM.
-
-### HMM Training
-- Separate HMMs are trained for high-risk and low-risk patients
-- Emission probabilities are estimated from training data
-- Log-space computation prevents numerical underflow
-
-### Prediction
-For a test sample, compute log-likelihoods under both models and predict the class with higher likelihood.
-
-## Key Fixes Implemented
-
-The code includes several important fixes:
-
-1. **Global gene set ranking** - Ranks modules once on all training data, not per-sample
-2. **Proper observation sequences** - Discretizes continuous scores into HMM states
-3. **Emission probability training** - Learns actual emission distributions
-4. **Log-space computation** - Prevents numerical underflow in likelihood calculations
-5. **No data leakage** - Gene set ranking and HMM training only use training fold data
 
 ## Project Structure
 
 ```
 .
-├── hmm.py                              # Main HMM classifier script
+├── ranking+hmm+eval.ipynb              # Main HMM classifier notebook
 ├── data_clinical_patient.txt           # METABRIC clinical data (not in repo)
 ├── data_mrna_illumina_microarray.txt   # METABRIC expression data (not in repo)
 ├── merged.csv                          # Processed merged dataset (not in repo)

@@ -1,6 +1,6 @@
-# HMM-Based Gene Expression Risk Classifier
+# HMM-Based Gene Expression Risk Classifier for Breast Cancer Recurrence
 
-A Hidden Markov Model (HMM) implementation for predicting patient risk levels based on gene expression data from biological pathway gene sets.
+A Hidden Markov Model (HMM) implementation for predicting patient risk levels of breast cancer recurrence based on gene expression data from biological pathway gene sets.
 
 ## Overview
 
